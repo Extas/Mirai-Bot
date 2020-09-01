@@ -53,6 +53,7 @@ object MyPluginMain : KotlinPlugin() {
         MySetting.count++ // 对 Setting 的改动会自动在合适的时间保存
 
         MySimpleCommand.register() // 注册指令
+        MyCompositeCommand.register()
     }
 
     override fun onDisable() {

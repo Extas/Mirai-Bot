@@ -9,7 +9,7 @@ group 'me.lovesasuna'
 version '2.7.3'
 
 ext {
-    workDir = 'E:\\work\\Mirai'
+    workDir = 'E:\\work\\Mirai-Console\\plugins'
 }
 
 sourceCompatibility = 8
@@ -24,14 +24,6 @@ repositories {
 }
 
 defaultTasks("shadowJar")
-
-shadowJar {
-    processResources.dependsOn(project('CustomCore').getTasksByName('shadowJar', false))
-    logger.log(LogLevel.INFO, "The newest mirai version is " + project('CustomCore').version)
-    manifest {
-        attributes("Main-Class": "me.lovesasuna.bot.MainKt")
-    }
-}
 
 dependencies {
     compileOnly 'org.jsoup:jsoup:1.13.1'
