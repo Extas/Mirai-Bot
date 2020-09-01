@@ -1,31 +1,22 @@
 package me.lovesasuna.bot
 
 import kotlinx.serialization.Serializable
-import me.lovesasuna.bot.file.Config
+import me.lovesasuna.bot.function.Hitokoto
 import me.lovesasuna.bot.listener.FriendMessageListener
 import me.lovesasuna.bot.listener.GroupMessageListener
-import me.lovesasuna.bot.manager.FileManager
 import me.lovesasuna.bot.util.BasicUtil
-import me.lovesasuna.bot.util.Dependence
-import me.lovesasuna.bot.util.plugin.Logger
 import me.lovesasuna.bot.util.plugin.PluginScheduler
-import net.mamoe.mirai.Bot
+import net.mamoe.mirai.console.command.*
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.unregister
-import net.mamoe.mirai.console.command.CommandPermission
-import net.mamoe.mirai.console.command.CommandSender
-import net.mamoe.mirai.console.command.CompositeCommand
-import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.join
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.utils.BotConfiguration
 import net.mamoe.mirai.utils.MiraiLogger
-import net.mamoe.mirai.utils.info
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.nio.file.Files
@@ -37,27 +28,21 @@ import java.nio.file.Paths
  */
 
 
-object MyPluginMain : KotlinPlugin() {
+object Bot : KotlinPlugin() {
 
     override fun onEnable() {
         MySetting.reload() // 从数据库自动读取配置实例
         MyPluginData.reload()
 
-        logger.info { "Hi: ${MySetting.name}" } // 输出一条日志.
-        logger.info("Hi: ${MySetting.name}") // 输出一条日志. 与上面一条相同, 但更推荐上面一条.
-        logger.verbose("Hi: ${MySetting.name}") // 多种日志级别可选
-
-        // 请不要使用 println, System.out.println 等标准输出方式. 请总是使用 logger.
-
-
         MySetting.count++ // 对 Setting 的改动会自动在合适的时间保存
 
-        MySimpleCommand.register() // 注册指令
+
         MyCompositeCommand.register()
+        Hitokoto.register()
     }
 
     override fun onDisable() {
-        MySimpleCommand.unregister() // 取消注册指令
+
     }
 }
 
@@ -89,23 +74,12 @@ data class MyData(
         val list: List<String>
 )
 
-// 简单指令
-object MySimpleCommand : SimpleCommand(
-        MyPluginMain, "foo",
-        description = "示例指令"
-) {
-    // 通过 /foo 调用, 参数自动解析
 
-    @Handler
-    suspend fun CommandSender.handle(int: Int, str: String) { // 函数名随意, 但参数需要按顺序放置.
-        sendMessage("/foo 的第一个参数是 $int, 第二个是 $str")
-    }
-}
 
 // 复合指令
 @OptIn(ConsoleExperimentalAPI::class)
 object MyCompositeCommand : CompositeCommand(
-        MyPluginMain, "manage",
+        Bot, "manage",
         description = "示例指令", permission = MyCustomPermission,
         // prefixOptional = true // 还有更多参数可填, 此处忽略
 ) {
@@ -143,47 +117,14 @@ object MyCompositeCommand : CompositeCommand(
     }
 }
 
-
 // 定义自定义指令权限判断
 object MyCustomPermission : CommandPermission {
     override fun CommandSender.hasPermission(): Boolean {
         // 高自由度的权限判定
-
-        /*
-        return if (this is FriendCommandSender) {
-            this.user.id == 123456L
+        return if (this is MemberCommandSender) {
+            this.user.id == 625924077L
         } else false
-        */
-
-        return true
     }
-}
-
-
-suspend fun main() {
-    Main.printSystemInfo()
-    /*初始化机器人依赖*/
-    Dependence.init()
-    Main.botConfig = BotConfiguration.Default.also {
-        it.randomDeviceInfo()
-    }
-    FileManager.readValue()
-    Logger.log("登陆协议: ${Main.botConfig.protocol}", Logger.LogLevel.CONSOLE)
-    Main.bot = Bot(Config.data.account,
-            Config.data.password,
-            Main.botConfig
-    ).also {
-        it.login()
-        Main.logger = it.logger
-    }
-
-    Main.initListener()
-
-    Runtime.getRuntime().addShutdownHook(Thread {
-        Logger.log(Logger.Messages.BOT_SHUTDOWN, Logger.LogLevel.CONSOLE)
-        FileManager.writeValue()
-    })
-    Main.bot.join()
 }
 
 object Main {

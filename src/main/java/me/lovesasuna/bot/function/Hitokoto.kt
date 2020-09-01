@@ -1,8 +1,12 @@
 package me.lovesasuna.bot.function
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import me.lovesasuna.bot.Bot
+import me.lovesasuna.bot.MyCustomPermission
 import me.lovesasuna.bot.util.interfaces.FunctionListener
 import me.lovesasuna.lanzou.util.NetWorkUtil
+import net.mamoe.mirai.console.command.CommandSender
+import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.message.MessageEvent
 import net.mamoe.mirai.message.data.Face
 import net.mamoe.mirai.message.data.Image
@@ -12,31 +16,35 @@ import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import kotlin.jvm.Throws
 
-class Hitokoto : FunctionListener {
-    @Throws(IOException::class)
-    override suspend fun execute(event: MessageEvent, message: String, image: Image?, face: Face?): Boolean {
-        if (message.startsWith("/一言")) {
-            var reader: BufferedReader
-            val strings = message.split(" ").toTypedArray()
-            val mapper = ObjectMapper()
-            /*如果不带参数,默认全部获取*/
-            if (strings.size == 1) {
-                val inputStream = NetWorkUtil.get("https://v1.hitokoto.cn/")?.second ?: return false
-                reader = BufferedReader(InputStreamReader(inputStream, StandardCharsets.UTF_8))
-                var string: String?
-                var text: String? = ""
-                while (reader.readLine().also { string = it } != null) {
-                    text += string
-                }
-                val `object` = mapper.readTree(text)
-                val hitokoto = `object`["hitokoto"].asText()
-                val from = `object`["from"].asText()
-                event.reply("『 $hitokoto 』- 「$from」")
-            }
-            /*如果长度为2*/
-            if (strings.size == 2) {
-                if ("help".equals(strings[1], ignoreCase = true)) {
-                    event.reply("""
+object Hitokoto : SimpleCommand(
+        Bot, "一言",
+        description = "一言",
+        permission = MyCustomPermission
+) {
+    @Handler
+    suspend fun CommandSender.handle() { // 函数名随意, 但参数需要按顺序放置.
+        var reader: BufferedReader
+        val mapper = ObjectMapper()
+        /*如果不带参数,默认全部获取*/
+
+        val inputStream = NetWorkUtil.get("https://v1.hitokoto.cn/")?.second ?: return
+        reader = BufferedReader(InputStreamReader(inputStream, StandardCharsets.UTF_8))
+        var string: String?
+        var text: String? = ""
+        while (reader.readLine().also { string = it } != null) {
+            text += string
+        }
+        val `object` = mapper.readTree(text)
+        val hitokoto = `object`["hitokoto"].asText()
+        val from = `object`["from"].asText()
+        sendMessage("『 $hitokoto 』- 「$from」")
+    }
+
+    @Handler
+    suspend fun CommandSender.handle2(parm: String) {
+        /*如果长度为2*/
+        if ("help".equals(parm, ignoreCase = true)) {
+            sendMessage("""
      一言参数: 
      a	Anime - 动画
      b	Comic – 漫画
@@ -47,21 +55,21 @@ class Hitokoto : FunctionListener {
      g	Other – 其他
      不填 - 随机
      """.trimIndent())
-                } else {
-                    val inputStream = NetWorkUtil.get("https://v1.hitokoto.cn/?c=" + strings[1])?.second ?: return false
-                    reader = BufferedReader(InputStreamReader(inputStream, StandardCharsets.UTF_8))
-                    var string: String?
-                    var text: String? = ""
-                    while (reader.readLine().also { string = it } != null) {
-                        text += string
-                    }
-                    val `object` = mapper.readTree(text)
-                    val hitokoto = `object`["hitokoto"].asText()
-                    val from = `object`["from"].asText()
-                   event.reply("『 $hitokoto 』- 「$from」")
-                }
+        } else {
+            var reader: BufferedReader
+            val mapper = ObjectMapper()
+            val inputStream = NetWorkUtil.get("https://v1.hitokoto.cn/?c=$parm")?.second ?: return
+            reader = BufferedReader(InputStreamReader(inputStream, StandardCharsets.UTF_8))
+            var string: String?
+            var text: String? = ""
+            while (reader.readLine().also { string = it } != null) {
+                text += string
             }
+            val `object` = mapper.readTree(text)
+            val hitokoto = `object`["hitokoto"].asText()
+            val from = `object`["from"].asText()
+            sendMessage("『 $hitokoto 』- 「$from」")
         }
-        return true
     }
+
 }
